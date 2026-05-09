@@ -8,7 +8,7 @@ ticker = "^NSEI"
 start_date = "2010-01-01"
 end_date = "2026-05-08"
 datapoints_range = (50,401)
-test_start = "2025-01-01"
+test_start = "2020-01-01"
 
 data = yf.download(ticker, start=start_date, end=end_date)
 data.dropna(inplace=True)
@@ -19,6 +19,8 @@ df["Close"] = data["Close"]
 
 df["Direction"] = np.where(df["Close"] > df["Close"].shift(1), 1, 0)
 df["Direction"] = df["Direction"].shift(-1)
+
+df["Returns"] = df["Close"].pct_change()
 
 fibo = [2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
 for i in fibo:
@@ -43,6 +45,8 @@ model = LogisticRegression(penalty='l2', C=1.0, solver='lbfgs', max_iter=1000, r
 
 acc = pd.DataFrame(index=range(*datapoints_range))
 acc["Accuracy"] = np.nan
+acc["Cumulative_Returns"] = np.nan
+acc["Sharpe_Ratio"] = np.nan
 
 for datapoints in range(*datapoints_range):
     print(datapoints)
@@ -63,7 +67,13 @@ for datapoints in range(*datapoints_range):
         results.loc[i, "Predicted"] = prob
     results.dropna(inplace=True)
     accuracy = (results["Actual"] == results["Predicted"]).mean()
+    
+    results["Returns"] = df["Returns"].shift(-1) * results["Predicted"]
+    results["Cumulative_Returns"] = (1+results["Returns"].fillna(0)).cumprod()
+    
     acc.loc[datapoints, "Accuracy"] = accuracy * 100
-sorted_acc = acc.sort_values(by="Accuracy", ascending=False)
+    acc.loc[datapoints, "Sharpe_Ratio"] = (results["Returns"].mean() / results["Returns"].std()) * np.sqrt(252)
+    acc.loc[datapoints, "Cumulative_Returns"] = results["Cumulative_Returns"].iloc[-1]
+sorted_acc = acc.sort_values(by="Cumulative_Returns", ascending=False)
 print(sorted_acc)
 sorted_acc.to_csv("Accuracy_by_datapoints_day_closing.csv")
