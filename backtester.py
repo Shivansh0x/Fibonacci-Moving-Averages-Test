@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 ticker = "^NSEI"
 start_date = "2010-01-01"
 end_date = "2026-05-08"
-datapoints = 68 #Highest accuracy from running main.py
+datapoints = 144 #Highest accuracy from running optimization.py
 test_start = "2020-01-01"
 
 data = yf.download(ticker, start=start_date, end=end_date)
@@ -29,14 +29,14 @@ for i in fibo:
     df["MA_" + str(i)] = df["Close"].rolling(i).mean()
 
 for i in range(1, len(fibo)):
-    j = i-1
-    a = fibo[j]
-    b = fibo[i]
-    lo = df["MA_" + str(a)]
-    hi = df["MA_" + str(b)]
-    con1 = (lo < hi) & (lo.shift(1) >= hi.shift(1))
-    con2 = (lo > hi) & (lo.shift(1) <= hi.shift(1))
-    df["MA_" + str(a) + "_" + str(b)] = np.select([con1, con2], [1, 2], 0)
+    for j in range(0, i):
+        a = fibo[j]
+        b = fibo[i]
+        lo = df["MA_" + str(a)]
+        hi = df["MA_" + str(b)]
+        con1 = (lo < hi) & (lo.shift(1) >= hi.shift(1))
+        con2 = (lo > hi) & (lo.shift(1) <= hi.shift(1))
+        df["MA_" + str(a) + "_" + str(b)] = np.select([con1, con2], [1, 2], 0)
 df.dropna(inplace=True)
 
 x = df.loc[:, "MA_2_3":"MA_144_233"]
