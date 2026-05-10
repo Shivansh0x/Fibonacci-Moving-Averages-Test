@@ -5,9 +5,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 ticker = "^NSEI"
-start_date = "2010-01-01"
+start_date = "2005-01-01"
 end_date = "2026-05-08"
-datapoints_range = (50,401)
+datapoints_range = (50,200)
 test_start = "2020-01-01"
 
 data = yf.download(ticker, start=start_date, end=end_date)
@@ -27,14 +27,14 @@ for i in fibo:
     df["MA_" + str(i)] = df["Close"].rolling(i).mean()
 
 for i in range(1, len(fibo)):
-    j = i-1
-    a = fibo[j]
-    b = fibo[i]
-    lo = df["MA_" + str(a)]
-    hi = df["MA_" + str(b)]
-    con1 = (lo < hi) & (lo.shift(1) >= hi.shift(1))
-    con2 = (lo > hi) & (lo.shift(1) <= hi.shift(1))
-    df["MA_" + str(a) + "_" + str(b)] = np.select([con1, con2], [1, 2], 0)
+    for j in range(0, i):
+        a = fibo[j]
+        b = fibo[i]
+        lo = df["MA_" + str(a)]
+        hi = df["MA_" + str(b)]
+        con1 = (lo < hi) & (lo.shift(1) >= hi.shift(1))
+        con2 = (lo > hi) & (lo.shift(1) <= hi.shift(1))
+        df["MA_" + str(a) + "_" + str(b)] = np.select([con1, con2], [1, 2], 0)
 df.dropna(inplace=True)
 
 x = df.loc[:, "MA_2_3":"MA_144_233"]
@@ -76,4 +76,4 @@ for datapoints in range(*datapoints_range):
     acc.loc[datapoints, "Cumulative_Returns"] = results["Cumulative_Returns"].iloc[-1]
 sorted_acc = acc.sort_values(by="Cumulative_Returns", ascending=False)
 print(sorted_acc)
-sorted_acc.to_csv("Accuracy_by_datapoints_day_closing.csv")
+sorted_acc.to_csv("Accuracy_by_datapoints_day_closing_long.csv")
